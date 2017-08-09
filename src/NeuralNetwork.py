@@ -1,5 +1,4 @@
 import numpy as np
-import math
 
 class NeuralNetwork:
     def __init__(self, inputs, outputs, nTrainingExamples, stepSize =  0.1, nLayers = 1, regularizationParameter = 10):
