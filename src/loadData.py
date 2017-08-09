@@ -36,7 +36,8 @@ def loadLabelFile(file):
 				y[l][ord(file.read(1))] = 1
 		return y, nLabels
 
-
+clear = lambda: os.system('cls')
+clear()
 print("Loading training data")
 startImageFile = time.time()
 f = open("../train/train-images.idx3-ubyte", "rb")
@@ -58,8 +59,8 @@ print("Training Neural NeuralNetwork")
 NN.SGD()
 trainingNeuralNetwork = time.time()
 print("Testing")
-#NN.Predict(X[0])
 NN.printTheta()
+NN.Predict(X[0])
 testingNeuralNetwork = time.time()
 totalTime = time.time()
 print("---")
