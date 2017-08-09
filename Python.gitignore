@@ -1,0 +1,4 @@
+#Ignore compiled files
+src/__pycache__/
+*.pyc
+*$py.class

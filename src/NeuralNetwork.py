@@ -1,12 +1,12 @@
 import numpy as np
 
 class NeuralNetwork:
-    def __init__(self, inputs, outputs, nTrainingExamples, stepSize =  0.1, nLayers = 1, regularizationParameter = 10):
-        self.Xs = inputs
-        self.Ys = outputs
-        self.m = nTrainingExamples
+	def __init__(self, inputs, outputs, nTrainingExamples, stepSize =  0.1, nLayers = 1, regularizationParameter = 10):
+		self.Xs = inputs
+		self.Ys = outputs
+		self.m = nTrainingExamples
 		self.n = stepSize
-		self.l  nLayers
+		self.l = nLayers
 		self.Lambda = regularizationParameter
 		self.t = size(self.Xs[0]) + 1
 
@@ -46,7 +46,7 @@ class NeuralNetwork:
 						theta[_l][_to][_from] = theta[_l][_to][_from] - n * D[_l][_to][_from]
 
 	def forwardPropagation(A, theta):
-		for _layer in range(1, self.l);
+		for _layer in range(1, self.l):
 			nodesInLayer = len(Activation[_layer])
 			for _to in range(1, nodesInLayer):
 				actvivation = 0

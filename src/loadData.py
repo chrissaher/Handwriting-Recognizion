@@ -4,6 +4,7 @@ import time
 import numpy as np
 import scipy.misc as smp
 import os, errno
+from NeuralNetwork import NeuralNetwork
 
 def nextInt(file):
 	return int.from_bytes(file.read(4), byteorder = 'big')
@@ -51,6 +52,7 @@ loadingLabelFile = time.time()
 y, nLabels = loadLabelFile(f)
 readingLabelFile = time.time()
 f.close()
+
 totalTime = time.time()
 print("---")
 print("Loading data time: %.4fsec" % (loadingImageFile - startImageFile))
