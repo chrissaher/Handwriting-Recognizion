@@ -10,7 +10,7 @@ def nextInt(file):
 
 print("Loading training data")
 start = time.time()
-f = open("train-images.idx3-ubyte", "rb")
+f = open("../train/train-images.idx3-ubyte", "rb")
 loadingFileTime = time.time()
 data = f.read()
 f.seek(0)
