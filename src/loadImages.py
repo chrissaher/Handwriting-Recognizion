@@ -1,8 +1,6 @@
 import numpy as np
 import scipy.misc as smp
 import time
-import numpy as np
-import scipy.misc as smp
 import os, errno
 
 def nextInt(file):

@@ -1,4 +1,6 @@
 #Ignore compiled files
 src/__pycache__/
+src/IMG/
+src/model/MNIST_data/
 *.pyc
 *$py.class

@@ -1,0 +1,4 @@
+Pillow
+numpy
+pandas
+scipy==0.19.1
