@@ -2,64 +2,50 @@
 <html>
 	<head>
 		<title>Handwriting Recognizion</title>
-		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+
+		<link rel="stylesheet" href="resources/css/bootstrap.css">
+		<link rel="stylesheet" href="resources/css/font-awesome.min.css">
+		<link rel="stylesheet" href="resources/css/docs.css">
+		<link rel="stylesheet" href="resources/css/bootstrap-social.css">
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.6.0/Chart.bundle.min.js"></script>
+		<style>
+			canvas {
+				-moz-user-select: none;
+				-webkit-user-select: none;
+				-ms-user-select: none;
+			}
+		</style>
 	</head>
 	<body>
 		<div class="container">
 			<h1>Handwriting Recognizion</h1>
 			<div class="row">
-				<div class="col-md-6">
-					<p>Canvas</p>
+				<div class="col-md-12">
+					<a class="btn btn-primary btn-xs btn-github"><span><i class="fa fa-github"></i> GitHub</span></a>
+				</div>
+			</div>
+			<br />
+			<div class="row">
+				<div class="col-md-5">
 					<canvas id="main" width="449" height="449"></canvas>
-					<p>
-						<button id="clear" class="btn btn-default">clear</button>
-					</p>
+				</div>
+				<div class="col-md-1">
+					<button id="clear" class="btn btn-default"><i class="fa fa-trash-o"></i></button>
 				</div>
 				<div class="col-md-6">
 					<p>Matriz (28 x 28):</p>
 					<canvas id="input" style="border:1px solid" width="140" height="140"></canvas>
 					<hr>
 
-					<p>output:</p>
-					<textarea id = "results"></textarea>
-					<table id="output" class="table table-bordered text-center">
-						<tr>
-							<th colspan="5" class="text-center">softmax</th>
-						</tr>
-						<tr class="table table-sm">
-							<td>0</td>
-							<td>1</td>
-							<td>2</td>
-							<td>3</td>
-							<td>4</td>
-						</tr>
-						<tr>
-							<td>5%</td>
-							<td>5%</td>
-							<td>5%</td>
-							<td>5%</td>
-							<td>5%</td>
-						</tr>
-						<tr class="table table-sm">
-							<td>5</td>
-							<td>6</td>
-							<td>7</td>
-							<td>8</td>
-							<td>9</td>
-						</tr>
-						<tr>
-							<td>5%</td>
-							<td>5%</td>
-							<td>55%</td>
-							<td>5%</td>
-							<td>5%</td>
-						</tr>
-					</table>
+					<div id="container" style="width: 75%;">
+						<canvas id="canvas"></canvas>
+					</div>
 				</div>
 				<p id="matrix"></p>
 			</div>
 		</div>
+
 	</body>
 	<script type="text/javascript" src="js/server.js"></script>
 </html>
