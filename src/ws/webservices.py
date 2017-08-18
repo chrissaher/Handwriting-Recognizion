@@ -21,11 +21,15 @@ class Classify(object):
 		y = softmax.classify(X)
 		index = -1
 		mv = -100
+		strY = ""
 		for i in range(10):
+			if i > 0:
+				strY = strY + ","
+			strY = strY + str(y[0][i])
 			if (y[0][i] * 1000) > mv:
 				mv = (y[0][i] * 1000)
 				index = i
-		return str(index)
+		return strY
 	'''
 	def POST(self):
 		return "THIS IS POST"

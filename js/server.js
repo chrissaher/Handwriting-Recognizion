@@ -1,3 +1,11 @@
+
+'use strict';
+
+window.chartColors = {
+	red: 'rgb(255, 99, 132)',
+	green: 'rgb(75, 192, 192)'
+};
+
 class Controller {
 	constructor() {
 		this.input = document.getElementById("input")
@@ -7,6 +15,8 @@ class Controller {
 		this.canvas.addEventListener("mouseup", this.onMouseUp.bind(this));
 		this.canvas.addEventListener("mousemove", this.onMouseMove.bind(this));
 		this.drawMatrix();
+
+
 	}
 
 	onMouseDown(e) {
@@ -61,43 +71,6 @@ class Controller {
 			if (Math.min(...inputs) === 255) {
 				return;
 			}
-			/*
-			$.ajax({
-				url: 'http://127.0.0.1:8080/',
-				method: 'POST',
-				contentType: 'application/x-www-form-urlencoded',
-				data: inputs.toString(),
-				success: (data) => {
-					for (let i = 0; i < 2; i++) {
-						var max = 0;
-						var max_index = 0;
-						for (let j = 0; j < 10; j++) {
-							var value = Math.round(data.results[i][j] * 1000);
-							if (value > max) {
-								max = value;
-								max_index = j;
-							}
-							var digits = String(value).length;
-							for (var k = 0; k < 3 - digits; k++) {
-								value = '0' + value;
-							}
-							var text = '0.' + value;
-							if (value > 999) {
-								text = '1.000';
-							}
-							$('#output tr').eq(j + 1).find('td').eq(i).text(text);
-						}
-						for (let j = 0; j < 10; j++) {
-							if (j === max_index) {
-								$('#output tr').eq(j + 1).find('td').eq(i).addClass('success');
-							} else {
-								$('#output tr').eq(j + 1).find('td').eq(i).removeClass('success');
-							}
-						}
-					}
-				}
-			});
-			*/
 			$.ajax({
 				url: 'http://127.0.0.1:8080/',
 				method: 'POST',
@@ -106,20 +79,51 @@ class Controller {
 					'data': JSON.stringify(inputs),
 				},
 				success: (data) => {
-					alert(data)
-					$('#output tr').eq(1).find('td').eq(0).text(data);
+					var Xs = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+					var color = Chart.helpers.color
+					var res = data.split(",")
+					var softmax = []
+					res.forEach(function(item, index){
+						softmax.push(parseFloat(item))
+					})
 
-					document.getElementById("matrix").innerHTML = JSON.stringify(inputs);
+					//window.myBar.update();
+					var chart = document.getElementById("canvas").getContext("2d");
+					if(window.myBar == null) {
+						this.barChartData = {
+							labels: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
+							datasets: [{
+								label: 'Softmax',
+								backgroundColor: color(window.chartColors.red).alpha(0.5).rgbString(),
+								borderColor: window.chartColors.red,
+								borderWidth: 1,
+								data: softmax
+							}]
+						}
+						window.myBar = new Chart(chart, {
+							type: 'bar',
+							data: this.barChartData,
+							options: {
+								responsive: true,
+								legend: {
+									position: 'top',
+								},
+								title: {
+									display: true,
+									text: 'Output'
+								}
+							}
+						})
+					} else {
+						this.barChartData.datasets.forEach(function(dataset) {
+							dataset.data = softmax;
+						});
+						//this.barChartData.datasets[0].bars[0].fillColor = "rgba(229,12,12,0.7)";
+						window.myBar.update();
+					}
+					//document.getElementById("matrix").innerHTML = data;
 				}
 			});
-			/*
-			$.ajax({
-				url: 'http://127.0.0.1:8080/',
-				method: 'GET',
-				success: (data) => {
-					alert(data)
-				}
-			});*/
 		}
 		img.src = this.canvas.toDataURL();
 	}
@@ -155,6 +159,7 @@ class Controller {
 
 
 $(() => {
+
 	var controller = new Controller();
 	$('#clear').click(() => {
 		controller.clearCanvas();
