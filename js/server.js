@@ -3,7 +3,12 @@
 
 window.chartColors = {
 	red: 'rgb(255, 99, 132)',
-	green: 'rgb(75, 192, 192)'
+	orange: 'rgb(255, 159, 64)',
+	yellow: 'rgb(255, 205, 86)',
+	green: 'rgb(75, 192, 192)',
+	blue: 'rgb(54, 162, 235)',
+	purple: 'rgb(153, 102, 255)',
+	grey: 'rgb(201, 203, 207)'
 };
 
 class Controller {
@@ -83,7 +88,13 @@ class Controller {
 					var color = Chart.helpers.color
 					var res = data.split(",")
 					var softmax = []
+					var maxIndex = -1
+					var maxValue = -100
 					res.forEach(function(item, index){
+						if(maxValue < item) {
+							maxValue = item
+							maxIndex = index
+						}
 						softmax.push(parseFloat(item))
 					})
 
@@ -94,11 +105,18 @@ class Controller {
 							labels: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
 							datasets: [{
 								label: 'Softmax',
-								backgroundColor: color(window.chartColors.red).alpha(0.5).rgbString(),
+								backgroundColor: [],//color(window.chartColors.red).alpha(0.5).rgbString(),
 								borderColor: window.chartColors.red,
 								borderWidth: 1,
 								data: softmax
 							}]
+						}
+						for(var i = 0; i < 10; i++){
+							if(i == maxIndex){
+								this.barChartData.datasets[0].backgroundColor[i] = color(window.chartColors.green).alpha(0.5).rgbString();
+							} else {
+								this.barChartData.datasets[0].backgroundColor[i] = color(window.chartColors.red).alpha(0.5).rgbString();
+							}
 						}
 						window.myBar = new Chart(chart, {
 							type: 'bar',
@@ -114,11 +132,18 @@ class Controller {
 								}
 							}
 						})
+
 					} else {
 						this.barChartData.datasets.forEach(function(dataset) {
 							dataset.data = softmax;
 						});
-						//this.barChartData.datasets[0].bars[0].fillColor = "rgba(229,12,12,0.7)";
+						for(var i = 0; i < 10; i++){
+							if(i == maxIndex){
+								window.myBar.data.datasets[0].backgroundColor[i] = color(window.chartColors.green).alpha(0.5).rgbString();
+							} else {
+								window.myBar.data.datasets[0].backgroundColor[i] = color(window.chartColors.red).alpha(0.5).rgbString();
+							}
+						}
 						window.myBar.update();
 					}
 					//document.getElementById("matrix").innerHTML = data;
