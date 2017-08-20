@@ -6,6 +6,11 @@ import scipy.misc as smp
 import os, errno
 from NeuralNetwork import NeuralNetwork
 
+def printMatrix(self, matrix, row, col):
+	for i in range(row):
+		for j in range(col):
+			print("[%d][%d] = %lf"%(i, j, matrix[i][j]))
+
 def nextInt(file):
 	return int.from_bytes(file.read(4), byteorder = 'big')
 def loadImageFile(file):
@@ -22,7 +27,7 @@ def loadImageFile(file):
 	for j in range(nImages):
 		for i in range(nRow * nCol):
 			pixel = file.read(1)
-			X[j][i] = ord(pixel)
+			X[j][i] = ord(pixel) / 255.0
 
 	return X, nImages
 
@@ -30,7 +35,7 @@ def loadLabelFile(file):
 		file.seek(0)
 		print("Reading data from label...")
 		maginc_number_train = nextInt(file)
-		nLabels = nextInt(file)
+		nLabels = nextInt( file)
 		y = [[0 for j in range(10)] for l in range(nLabels)]
 		for l in range(nLabels):
 				y[l][ord(file.read(1))] = 1
@@ -55,14 +60,32 @@ readingLabelFile = time.time()
 f.close()
 
 NN = NeuralNetwork(X, y, nLabels)
+NN.info()
 print("Training Neural NeuralNetwork")
 NN.SGD()
 trainingNeuralNetwork = time.time()
 print("Testing")
-NN.printTheta()
-NN.Predict(X[0])
+#NN.printTheta()
+pY = NN.Predict(X[0])
+'''
+for i in range(50):
+	if pY[i] > 0.00001:
+		print("X[%d] = %lf"%(i, pY[i]))
+
+for i in range(10):
+	print("Y[%d] = %lf"%(i, pY[i]))
+'''
 testingNeuralNetwork = time.time()
 totalTime = time.time()
+'''
+theta = NN.getTheta()
+f = open("theta.txt", "w+")
+for i in range(200):
+	for j in range(200):
+		if theta[0][i][j] > 0.0001:
+			f.write("theta[0][%d][%d] = %lf\n" % (i, j, theta[0][i][j]))
+f.close()
+'''
 print("---")
 print("Loading data time: %.4fsec" % (loadingImageFile - startImageFile))
 print("Reding data time: %.4fsec" % (readingImageFile - loadingImageFile))
