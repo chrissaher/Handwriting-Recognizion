@@ -174,9 +174,9 @@ class Network:
 		_layers = [InputLayer(X)] + [self.layers]
 
 		for i in range(1, len(layers)):
-			layer[i].forward(layer[i - 1].A, self.W[i - 1], self.b[i - 1])
+			_layers[i].forward(_layers[i - 1].A, self.W[i - 1], self.b[i - 1])
 
-		cost = layers[-1].cost(Y)
+		cost = _layers[-1].cost(Y)
 		return cost
 
 	# Random the input and output and return in different batches
