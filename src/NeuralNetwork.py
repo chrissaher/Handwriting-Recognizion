@@ -33,6 +33,12 @@ class ReluLayer(Layer):
 		self.A = util.relu(input_layer)
 		return self.A
 
+	def backward(self, dA):
+		tmp = dA.T
+		for i in range(tmp.shape[0]):
+			tmp[i <= 0] = 0
+		return tmp.T
+
 class SigmoidLayer(Layer):
 
 	def __init__(self, nNodes):
@@ -50,36 +56,80 @@ class SoftmaxLayer(Layer):
 		self.m = nNodes;
 
 	def forward(self, input_layer, W, b):
-		self.A = util.softmax(np.dot(W, input_layer) + b)
+		self.Z = np.dot(W, input_layer) + b
+		self.A = util.softmax(self.Z)
+		#print("OUTPUT:", self.Z.T[0])
+		#print("OUTPUT:", self.A.T[0])
+		#print("MIN:", np.min(self.A.T[0]))
+		#print("MAX:", np.max(self.A.T[0]))
+		#print("--------------")
 		return self.A
 
+	# cross-entropy function
 	def cost(self, Y):
-		return Y - self.A
+		# http://cs231n.github.io/neural-networks-case-study/#grad
+		# https://gist.github.com/mamonu/b03ffa2e6775e45866843e11dcd84361
 
-	def backpropagate(self, dz, prev_layer):
-		dw = (1. / self.m) * np.dot(dz, prev_layer.T)
+		#print("MIN VAL OF A: ", np.min(self.A))
+		#print("MAX VAL OF A: ", np.max(self.A))
+		#print(self.A)
+		return (-1. / self.m) * np.sum(Y * np.log(self.A))
+		#return - np.sum(np.log(self.A) * (Y), axis=1)
+
+	def error(self, Y):
+		return self.A - Y
+
+	def backpropagate(self, dA, A_prev):
+		#dz = np.dot(self.Z, dA)
+		dz = dA
+		#print("DIFF:", dz.T[0])
+		#print("######SOFTMAX BACK######")
+		#print("dA.shape: ", dA.shape)
+		#print("dZ.shape: ", dz.shape)
+		#print("Z.shape: ", self.Z.shape)
+		#print("A.shape: ", self.A.shape)
+		#print("A_prev.shape: ", A_prev.shape)
+
+		dw = (1. / self.m) * np.dot(dz, A_prev.T)
 		db = (1. / self.m) * np.sum(dz, axis = 1, keepdims = True)
+		#print("dw.shape: ", dw.shape)
+		#print("db.shape: ", db.shape)
+		#print("########################")
 		return (dz, dw, db)
+
+	def predict(self):
+		return self.A.argmax(axis=0)
 
 class FullConnectedLayer(Layer):
 
 	def __init__(self, nNodes):
 		super().__init__(nNodes)
 		self.linearLayer = LinearLayer(nNodes)
-		self.activationLayer = SigmoidLayer(nNodes)
+		self.activationLayer = ReluLayer(nNodes)
 
 	def forward(self, input_layer, W, b):
 		self.Z = self.linearLayer.forward(input_layer, W, b)
 		self.A = self.activationLayer.forward(self.Z)
-		return self.Z
+		return self.A
 
 	def cost(self, Y):
 		return self.activationLayer.cost(Y)
 
-	def backpropagate(self, dz, prev_layer):
-		dz = np.multiply(dz, np.int64(dz > 0))
-		dw = (1. / self.m) * np.dot(dz, prev_layer.T)
+	def backpropagate(self, dA, A_prev):
+		#print("######FullConnectedLayer BACK######")
+		#print("dA.shape: ", dA.shape)
+		dz = self.activationLayer.backward(dA)
+
+		#print("dZ.shape: ", dz.shape)
+		#print("Z.shape: ", self.Z.shape)
+		#print("A.shape: ", self.A.shape)
+		#print("A_prev.shape: ", A_prev.shape)
+
+		dw = (1. / self.m) * np.dot(dz, A_prev.T)
 		db = (1. / self.m) * np.sum(dz, axis = 1, keepdims = True)
+		#print("dw.shape: ", dw.shape)
+		#print("db.shape: ", db.shape)
+		#print("########################")
 		return (dz, dw, db)
 
 class Network:
@@ -102,6 +152,7 @@ class Network:
 		self.verbose = verbose
 
 	def fit(self, X, Y):
+		f = open("costs", "w")
 		m = X.shape[1]
 
 		# Divide train, dev, test
@@ -114,11 +165,14 @@ class Network:
 		X_dev = X[:, train_len + 1: train_len + dev_len + 1]
 		Y_dev = Y[:, train_len + 1: train_len + dev_len + 1]
 
+		if self.verbose :
+			print("train_len: ", train_len)
+			print("dev_len: ", dev_len)
+
 		# Initialize weights and bias
 		self.initialize_parameters(X_train)
 
-		if self.verbose:
-			cont = 0
+		cont = 0
 		# Gradient Descent
 		# If mini_batch_size = 1 -> Then is Stochastic gradient Descent
 		# If mini_batch_size is in range <1, m> -> Then is mini batch gradient Descent
@@ -130,62 +184,137 @@ class Network:
 			# Iterate through minibatches
 			for minibatch in minibatches:
 				(_x, _y) = minibatch
-				_layers = [InputLayer(_x)] + self.layers
+				_layers = [InputLayer(_x.astype(float))] + self.layers
+
+				if self.verbose :
+					print("_x.shape: ", _x.shape)
+					print("_y.shape: ", _y.shape)
 
 				# Forward Propagation
 				for i in range(1, len(_layers)):
 					_layers[i].forward(_layers[i - 1].A, self.W[i - 1], self.b[i - 1])
 
+				if self.verbose :
+					print("---------------------------")
+					print("_x.shape: ", _x.shape)
+					print("_y.shape: ", _y.shape)
+					print("L[1].shape: ", self.layers[0].A.shape)
+					print("L[2].shape: ", self.layers[1].A.shape)
+					print("W1.shape: ", self.W[0].shape)
+					print("b1.shape: ", self.b[0].shape)
+					print("W2.shape: ", self.W[1].shape)
+					print("b2.shape: ", self.b[1].shape)
+					print("---------------------------")
+
 				# Compute cost
 				cost = _layers[-1].cost(_y)
 
+
+				if cont % 30 == 0:
+					print("Cost at iteration " + str(cont) + ": " + str(np.sum(cost)));
+					f.write(str(cost) + "\n")
+				cont = cont + 1
+
 				if self.verbose:
-					if cont % 10 == 0:
-						print("Cost at iteration " + str(cont) + ": " + str(np.sum(cost)));
-					cont = cont + 1
+						print("Cost.shape: ", cost.shape)
+						print("Cost.shape: ", cost)
+
 
 				# Back Propagation
-				dz = cost
+				dA = _layers[-1].error(_y)
+				if self.verbose:
+					print("Error(dA).shape: ", dA.shape)
+
 				dWs = []
 				dbs = []
 				for i in range(len(_layers) - 1, 0, -1):
-					(dz, dw, db) = _layers[i].backpropagate(dz, _layers[i - 1].A)
-					dz = np.dot(self.W[i - 1].T, dz)
-					dWs = [dw] + dWs
+					(dz, dW, db) = _layers[i].backpropagate(dA, _layers[i - 1].A)
+					dA = np.dot(self.W[i - 1].T, dz)
+					#print("dA.shape: ", dA.shape)
+					dWs = [dW] + dWs
 					dbs = [db] + dbs
+
+				if self.verbose :
+					print("---------------------------")
+					print("_x.shape: ", _x.shape)
+					print("_y.shape: ", _y.shape)
+					print("L[1].shape: ", self.layers[0].A.shape)
+					print("L[2].shape: ", self.layers[1].A.shape)
+					print("W1.shape: ", self.W[0].shape)
+					print("b1.shape: ", self.b[0].shape)
+					print("W2.shape: ", self.W[1].shape)
+					print("b2.shape: ", self.b[1].shape)
+					print("---------------------------")
 
 				# Update weights
 				for i in range(len(self.W)):
 					self.W[i] = self.W[i] - self.learning_rate * dWs[i]
 					self.b[i] = self.b[i] - self.learning_rate * dbs[i]
 
-				self.layes = _layers[1:]
+				if self.verbose :
+					print("---------------------------")
+					print("_x.shape: ", _x.shape)
+					print("_y.shape: ", _y.shape)
+					print("L[1].shape: ", self.layers[0].A.shape)
+					print("L[2].shape: ", self.layers[1].A.shape)
+					print("W1.shape: ", self.W[0].shape)
+					print("b1.shape: ", self.b[0].shape)
+					print("W2.shape: ", self.W[1].shape)
+					print("b2.shape: ", self.b[1].shape)
+					print("---------------------------")
+
+				self.layers = _layers[1:]
 
 
 		# Getting train and validation error
 		train_error = self.validate(X_train, Y_train) * 1. / train_len
-		dev_error = self.validate(X_dev, Y_dev) * 1 / dev_len
-
+		dev_error = self.validate(X_dev, Y_dev) * 1. / dev_len
+		f.close()
 		print("Train error : ",train_error)
 		print("Dev error   : ", dev_error)
+		print("Number of iterations: ", cont)
 		return (train_error, dev_error)
 
 	def validate(self, X, Y):
-		_layers = [InputLayer(X)] + [self.layers]
+		_layers = [InputLayer(X)] + self.layers
 
-		for i in range(1, len(layers)):
+		for i in range(1, len(_layers)):
 			_layers[i].forward(_layers[i - 1].A, self.W[i - 1], self.b[i - 1])
 
-		cost = _layers[-1].cost(Y)
-		return cost
+		#cost = _layers[-1].cost(Y)
+		#m = Y.shape[1]
+		#cont = 0
+		_pred = _layers[-1].predict()
+		_real = Y.argmax(axis = 0)
+		cont = 1 * (_pred == _real)
+		#for i in range(1):
+			#print("SHAPE A : ", _layers[-1].A.shape)
+			#print("RESULT A : ", _layers[-1].A)
+			#print("PREDICT  : ", _layers[-1].predict())
+			#print("REAL     : ", Y.argmax(axis = 0))
+
+			#print("REAL.SIZE: ", _real.shape)
+			#print("PREDICT SIZE: ", _pred.shape)
+			#if np.argmax(Y, axis = 0) == _layers[-1].predict():
+				#cont = cont + 1
+		#print("MATCH: ", np.sum(cont))
+		#print("TOTAL: ", m)
+		return np.sum(cont)
 
 	# Random the input and output and return in different batches
 	def random_mini_batches(self, X, Y):
+		if self.verbose :
+			print("X.shape: ", X.shape)
+			print("Y.shape: ", Y.shape)
+			print("mini_batch_size: ", self.mini_batch_size)
+
 		mini_batch_size = self.mini_batch_size
 
 		m = X.shape[1]
 		mini_batches = []
 		permutation = list(np.random.permutation(m))
+		#shuffled_X = X[permutation, :]
+		#shuffled_Y = Y[permutation, :]
 		shuffled_X = X[:, permutation]
 		shuffled_Y = Y[:, permutation]
 
@@ -193,6 +322,8 @@ class Network:
 		for k in range(num_complete_minibatches):
 			mini_batch_X = shuffled_X[:, k * mini_batch_size: (k + 1)* mini_batch_size]
 			mini_batch_Y = shuffled_Y[:, k * mini_batch_size: (k + 1)* mini_batch_size]
+			#mini_batch_X = shuffled_X[k * mini_batch_size: (k + 1)* mini_batch_size, :]
+			#mini_batch_Y = shuffled_Y[k * mini_batch_size: (k + 1)* mini_batch_size, :]
 
 			mini_batch = (mini_batch_X, mini_batch_Y)
 			mini_batches.append(mini_batch)
@@ -200,6 +331,8 @@ class Network:
 		if m % mini_batch_size != 0:
 			mini_batch_X = shuffled_X[:, num_complete_minibatches * mini_batch_size :]
 			mini_batch_Y = shuffled_Y[:, num_complete_minibatches * mini_batch_size :]
+			#mini_batch_X = shuffled_X[num_complete_minibatches * mini_batch_size :, :]
+			#mini_batch_Y = shuffled_Y[num_complete_minibatches * mini_batch_size :, :]
 
 			mini_batch = (mini_batch_X, mini_batch_Y)
 			mini_batches.append(mini_batch)
@@ -210,13 +343,22 @@ class Network:
 		ws = []
 		bs = []
 		layers = [InputLayer(X)] + self.layers
-		print(layers[1])
 		for i in range(len(layers) - 1):
 			n = layers[i + 1].m
 			m = layers[i].m
-			w = np.random.randn(n * m).reshape(n, m) * 0.01
+			w = np.random.randn(n, m) * 0.01
 			ws.append(w)
 			_b = np.zeros(n).reshape(n, 1)
 			bs.append(_b)
+			#print("MIN VALUE OF W: ", np.min(w))
+			#print("MAX VALUE OF W: ", np.max(w))
+			#print("MIN VALUE OF b: ", np.min(_b))
+			#print("MAX VALUE OF b: ", np.max(_b))
 		self.W = ws
 		self.b = bs
+
+		if self.verbose:
+			print("W1.shape: ", self.W[0].shape)
+			print("b1.shape: ", self.b[0].shape)
+			print("W2.shape: ", self.W[1].shape)
+			print("b2.shape: ", self.b[1].shape)
