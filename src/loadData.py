@@ -76,8 +76,10 @@ y = np.array(y)
 nn = Network(layers = [ FullConnectedLayer(784),
 						SoftmaxLayer(10)],
 			mini_batch_size = 2,
-			num_iterations = 10,
+			num_iterations = 20,
 			learning_rate = 0.1,
+			momentum_rate = 0.9,
+			rmsprop_rate = 0.999,
 			verbose = False)
 
 nn.fit(X, y)

@@ -8,6 +8,7 @@ class Layer:
 	def __init__(self, nNodes):
 		self.m = nNodes;
 
+
 class InputLayer(object):
 
 	def __init__(self, X):
@@ -73,7 +74,7 @@ class SoftmaxLayer(Layer):
 		#print("MIN VAL OF A: ", np.min(self.A))
 		#print("MAX VAL OF A: ", np.max(self.A))
 		#print(self.A)
-		return (-1. / self.m) * np.sum(Y * np.log(self.A))
+		return (1. / self.m) * np.sum(Y * -np.log(self.A))
 		#return - np.sum(np.log(self.A) * (Y), axis=1)
 
 	def error(self, Y):
@@ -141,6 +142,9 @@ class Network:
 				learning_rate = 0.1,
 				train_size = 0.6,
 				dev_size = 0.2,
+				momentum_rate = 0,
+				rmsprop_rate = 0,
+				epsilon = 1e-08,
 				verbose = False):
 		self.layers = layers
 		self.mini_batch_size = mini_batch_size
@@ -149,6 +153,13 @@ class Network:
 		self.train_size = train_size
 		self.dev_size = dev_size
 		self.test_size = 1 - (train_size + dev_size)
+		# Abount momentun hyperparameter
+		# 	Common values for beta range from 0.8 to 0.999.
+		# 	If you don't feel inclined to tune this,
+		# 	beta=0.9 is often a reasonable default.
+		self.beta = momentum_rate
+		self.beta2 = rmsprop_rate
+		self.eps = epsilon
 		self.verbose = verbose
 
 	def fit(self, X, Y):
@@ -156,7 +167,6 @@ class Network:
 		m = X.shape[1]
 
 		# Divide train, dev, test
-
 		train_len = int(m * self.train_size)
 		X_train = X[:, 0: train_len]
 		Y_train = Y[:, 0: train_len]
@@ -172,7 +182,11 @@ class Network:
 		# Initialize weights and bias
 		self.initialize_parameters(X_train)
 
+		# Parameter needed for Adam optimization
+		t = 0
+
 		cont = 0
+
 		# Gradient Descent
 		# If mini_batch_size = 1 -> Then is Stochastic gradient Descent
 		# If mini_batch_size is in range <1, m> -> Then is mini batch gradient Descent
@@ -194,37 +208,20 @@ class Network:
 				for i in range(1, len(_layers)):
 					_layers[i].forward(_layers[i - 1].A, self.W[i - 1], self.b[i - 1])
 
-				if self.verbose :
-					print("---------------------------")
-					print("_x.shape: ", _x.shape)
-					print("_y.shape: ", _y.shape)
-					print("L[1].shape: ", self.layers[0].A.shape)
-					print("L[2].shape: ", self.layers[1].A.shape)
-					print("W1.shape: ", self.W[0].shape)
-					print("b1.shape: ", self.b[0].shape)
-					print("W2.shape: ", self.W[1].shape)
-					print("b2.shape: ", self.b[1].shape)
-					print("---------------------------")
-
 				# Compute cost
 				cost = _layers[-1].cost(_y)
-
 
 				if cont % 30 == 0:
 					print("Cost at iteration " + str(cont) + ": " + str(np.sum(cost)));
 					f.write(str(cost) + "\n")
 				cont = cont + 1
 
-				if self.verbose:
-						print("Cost.shape: ", cost.shape)
-						print("Cost.shape: ", cost)
+				# Add t for Adam Prop
+				t = t + 1
 
 
 				# Back Propagation
 				dA = _layers[-1].error(_y)
-				if self.verbose:
-					print("Error(dA).shape: ", dA.shape)
-
 				dWs = []
 				dbs = []
 				for i in range(len(_layers) - 1, 0, -1):
@@ -234,34 +231,25 @@ class Network:
 					dWs = [dW] + dWs
 					dbs = [db] + dbs
 
-				if self.verbose :
-					print("---------------------------")
-					print("_x.shape: ", _x.shape)
-					print("_y.shape: ", _y.shape)
-					print("L[1].shape: ", self.layers[0].A.shape)
-					print("L[2].shape: ", self.layers[1].A.shape)
-					print("W1.shape: ", self.W[0].shape)
-					print("b1.shape: ", self.b[0].shape)
-					print("W2.shape: ", self.W[1].shape)
-					print("b2.shape: ", self.b[1].shape)
-					print("---------------------------")
-
 				# Update weights
 				for i in range(len(self.W)):
-					self.W[i] = self.W[i] - self.learning_rate * dWs[i]
-					self.b[i] = self.b[i] - self.learning_rate * dbs[i]
+					# momentum applied to gradient descent
+					# If momentum = 0 => It will use normal gradient step
+					self.vdW[i] = self.beta * self.vdW[i] + (1 - self.beta) * dWs[i]
+					self.vdb[i] = self.beta * self.vdb[i] + (1 - self.beta) * dbs[i]
 
-				if self.verbose :
-					print("---------------------------")
-					print("_x.shape: ", _x.shape)
-					print("_y.shape: ", _y.shape)
-					print("L[1].shape: ", self.layers[0].A.shape)
-					print("L[2].shape: ", self.layers[1].A.shape)
-					print("W1.shape: ", self.W[0].shape)
-					print("b1.shape: ", self.b[0].shape)
-					print("W2.shape: ", self.W[1].shape)
-					print("b2.shape: ", self.b[1].shape)
-					print("---------------------------")
+					vdW_corr = self.vdW[i] / (1. - np.power(self.beta, t))
+					vdb_corr = self.vdb[i] / (1. - np.power(self.beta, t))
+
+					# rmsprop applied to gradient descent
+					self.sdW[i] = self.beta2 * self.sdW[i] + (1 - self.beta2) * np.power(dWs[i], 2)
+					self.sdb[i] = self.beta2 * self.sdb[i] + (1 - self.beta2) * np.power(dbs[i], 2)
+
+					sdW_corr = self.sdW[i] / (1. - np.power(self.beta2, t))
+					sdb_corr = self.sdb[i] / (1. - np.power(self.beta2, t))
+
+					self.W[i] = self.W[i] - self.learning_rate * (self.vdW[i] / (np.sqrt(sdW_corr + self.eps)))
+					self.b[i] = self.b[i] - self.learning_rate * (self.vdb[i] / (np.sqrt(sdb_corr + self.eps)))
 
 				self.layers = _layers[1:]
 
@@ -270,8 +258,13 @@ class Network:
 		train_error = self.validate(X_train, Y_train) * 1. / train_len
 		dev_error = self.validate(X_dev, Y_dev) * 1. / dev_len
 		f.close()
-		print("Train error : ",train_error)
-		print("Dev error   : ", dev_error)
+		print("--------------------------------")
+		print("Train error : ", 1 - train_error)
+		print("Dev   error : ", 1 - dev_error)
+		print("--------------------------------")
+		print("Train acc.  : ", train_error)
+		print("Dev   acc.  : ", dev_error)
+		print("--------------------------------")
 		print("Number of iterations: ", cont)
 		return (train_error, dev_error)
 
@@ -281,24 +274,9 @@ class Network:
 		for i in range(1, len(_layers)):
 			_layers[i].forward(_layers[i - 1].A, self.W[i - 1], self.b[i - 1])
 
-		#cost = _layers[-1].cost(Y)
-		#m = Y.shape[1]
-		#cont = 0
 		_pred = _layers[-1].predict()
 		_real = Y.argmax(axis = 0)
 		cont = 1 * (_pred == _real)
-		#for i in range(1):
-			#print("SHAPE A : ", _layers[-1].A.shape)
-			#print("RESULT A : ", _layers[-1].A)
-			#print("PREDICT  : ", _layers[-1].predict())
-			#print("REAL     : ", Y.argmax(axis = 0))
-
-			#print("REAL.SIZE: ", _real.shape)
-			#print("PREDICT SIZE: ", _pred.shape)
-			#if np.argmax(Y, axis = 0) == _layers[-1].predict():
-				#cont = cont + 1
-		#print("MATCH: ", np.sum(cont))
-		#print("TOTAL: ", m)
 		return np.sum(cont)
 
 	# Random the input and output and return in different batches
@@ -342,20 +320,47 @@ class Network:
 	def initialize_parameters(self, X):
 		ws = []
 		bs = []
+		# momentum arrays
+		vdWs = []
+		vdbs = []
+		# rmsprop arrays
+		sdWs = []
+		sdbs = []
+
 		layers = [InputLayer(X)] + self.layers
 		for i in range(len(layers) - 1):
 			n = layers[i + 1].m
 			m = layers[i].m
-			w = np.random.randn(n, m) * 0.01
+			# Normal initialization
+			# w = np.random.randn(n, m) * 0.01
+			# Initialize weights and bias
+			# Using "He Initialization"
+			# Similar to Xavier initialization
+			# 	Xavier initialization :
+			# 	w = np.random.randn(n, m) * np.sqrt(1. / m)
+			w = np.random.randn(n, m) * np.sqrt(2. / m)
 			ws.append(w)
 			_b = np.zeros(n).reshape(n, 1)
 			bs.append(_b)
-			#print("MIN VALUE OF W: ", np.min(w))
-			#print("MAX VALUE OF W: ", np.max(w))
-			#print("MIN VALUE OF b: ", np.min(_b))
-			#print("MAX VALUE OF b: ", np.max(_b))
+			# Initialize momentum
+			_vdW = np.zeros(w.shape)
+			vdWs.append(_vdW)
+			_vdb = np.zeros(_b.shape)
+			vdbs.append(_vdb)
+			# Initialize RmsProp
+			_sdW = np.zeros(w.shape)
+			sdWs.append(_sdW)
+			_sdb = np.zeros(_b.shape)
+			sdbs.append(_sdb)
+
 		self.W = ws
 		self.b = bs
+		# momentum arrays
+		self.vdW = vdWs
+		self.vdb = vdbs
+		# rmsprop arrays
+		self.sdW = sdWs
+		self.sdb = sdbs
 
 		if self.verbose:
 			print("W1.shape: ", self.W[0].shape)

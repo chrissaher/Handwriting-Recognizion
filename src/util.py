@@ -12,6 +12,6 @@ def tanh(x):
 def softmax(x):
 	# Stable softmax
 	e_x = np.exp(x - np.max(x))
-	return e_x / e_x.sum()
+	return e_x / e_x.sum(axis = 0)
 	# Normal softmax
 	#return np.exp(x) / np.sum(np.exp(x))
