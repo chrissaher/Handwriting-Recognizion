@@ -103,34 +103,30 @@ class SoftmaxLayer(Layer):
 
 class FullConnectedLayer(Layer):
 
-	def __init__(self, nNodes):
+	def __init__(self, nNodes, keep_prob = 1):
 		super().__init__(nNodes)
 		self.linearLayer = LinearLayer(nNodes)
 		self.activationLayer = ReluLayer(nNodes)
+		self.keep_prob = keep_prob
 
 	def forward(self, input_layer, W, b):
 		self.Z = self.linearLayer.forward(input_layer, W, b)
 		self.A = self.activationLayer.forward(self.Z)
+		self.D = np.random.rand(self.A.shape[0], self.A.shape[1])
+		self.D = (self.D < self.keep_prob)
+		self.A = self.A * self.D
+		self.A = self.A / self.keep_prob
 		return self.A
 
 	def cost(self, Y):
 		return self.activationLayer.cost(Y)
 
 	def backpropagate(self, dA, A_prev):
-		#print("######FullConnectedLayer BACK######")
-		#print("dA.shape: ", dA.shape)
+		dA = dA * self.D
+		dA = dA / self.keep_prob
 		dz = self.activationLayer.backward(dA)
-
-		#print("dZ.shape: ", dz.shape)
-		#print("Z.shape: ", self.Z.shape)
-		#print("A.shape: ", self.A.shape)
-		#print("A_prev.shape: ", A_prev.shape)
-
 		dw = (1. / self.m) * np.dot(dz, A_prev.T)
 		db = (1. / self.m) * np.sum(dz, axis = 1, keepdims = True)
-		#print("dw.shape: ", dw.shape)
-		#print("db.shape: ", db.shape)
-		#print("########################")
 		return (dz, dw, db)
 
 class Network:
@@ -145,6 +141,7 @@ class Network:
 				momentum_rate = 0,
 				rmsprop_rate = 0,
 				epsilon = 1e-08,
+				l2_regularization = 0,
 				verbose = False):
 		self.layers = layers
 		self.mini_batch_size = mini_batch_size
@@ -160,6 +157,8 @@ class Network:
 		self.beta = momentum_rate
 		self.beta2 = rmsprop_rate
 		self.eps = epsilon
+		# L2 regularization Parameter
+		self.lambd = l2_regularization
 		self.verbose = verbose
 
 	def fit(self, X, Y):
@@ -209,16 +208,19 @@ class Network:
 					_layers[i].forward(_layers[i - 1].A, self.W[i - 1], self.b[i - 1])
 
 				# Compute cost
-				cost = _layers[-1].cost(_y)
+				l2_reg_cost = 0
+				for w in self.W:
+					l2_reg_cost += np.sum(w ** 2)
+				l2_reg_cost = l2_reg_cost * (self.lambd / (2. * m))
+				cost = np.sum(_layers[-1].cost(_y)) + l2_reg_cost
 
-				if cont % 30 == 0:
-					print("Cost at iteration " + str(cont) + ": " + str(np.sum(cost)));
+				if cont % 100 == 0:
+					print("Cost at iteration " + str(cont) + ": " + str(cost));
 					f.write(str(cost) + "\n")
 				cont = cont + 1
 
 				# Add t for Adam Prop
 				t = t + 1
-
 
 				# Back Propagation
 				dA = _layers[-1].error(_y)
@@ -233,6 +235,8 @@ class Network:
 
 				# Update weights
 				for i in range(len(self.W)):
+					# L2 regularization or weight decay
+					reg_cost = (self.lambd * 1. / _x.shape[1]) * self.W[i]
 					# momentum applied to gradient descent
 					# If momentum = 0 => It will use normal gradient step
 					self.vdW[i] = self.beta * self.vdW[i] + (1 - self.beta) * dWs[i]
@@ -248,7 +252,7 @@ class Network:
 					sdW_corr = self.sdW[i] / (1. - np.power(self.beta2, t))
 					sdb_corr = self.sdb[i] / (1. - np.power(self.beta2, t))
 
-					self.W[i] = self.W[i] - self.learning_rate * (self.vdW[i] / (np.sqrt(sdW_corr + self.eps)))
+					self.W[i] = self.W[i] - self.learning_rate * (self.vdW[i] / (np.sqrt(sdW_corr + self.eps)))# - self.learning_rate * reg_cost
 					self.b[i] = self.b[i] - self.learning_rate * (self.vdb[i] / (np.sqrt(sdb_corr + self.eps)))
 
 				self.layers = _layers[1:]
@@ -262,10 +266,10 @@ class Network:
 		print("Train error : ", 1 - train_error)
 		print("Dev   error : ", 1 - dev_error)
 		print("--------------------------------")
-		print("Train acc.  : ", train_error)
-		print("Dev   acc.  : ", dev_error)
+		print("Train acc.  : %.02f"%(train_error * 100))
+		print("Dev   acc.  : %.02f"%(dev_error * 100))
 		print("--------------------------------")
-		print("Number of iterations: ", cont)
+		#print("Number of iterations: ", cont)
 		return (train_error, dev_error)
 
 	def validate(self, X, Y):
@@ -276,6 +280,8 @@ class Network:
 
 		_pred = _layers[-1].predict()
 		_real = Y.argmax(axis = 0)
+		#print("PRED : ",_pred)
+		#print("REAL : ",_real)
 		cont = 1 * (_pred == _real)
 		return np.sum(cont)
 

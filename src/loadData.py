@@ -18,15 +18,15 @@ def loadImageFile(file):
 	nImages = nextInt(file)
 	nRow = nextInt(file)
 	nCol = nextInt(file)
-	nImages = 1024
+	#nImages = 1024
 	print("Total Images: ", nImages)
 	print("Size of image: %d x %d" % (nRow, nCol))
-	print("Reading data from training...")
+	print("Reading data from images...")
 	X = [[0 for x in range(nImages)] for y in range(nRow * nCol)]
 	for j in range(nImages):
 		for i in range(nRow * nCol):
 			pixel = file.read(1)
-			X[i][j] = ord(pixel) / 255
+			X[i][j] = ord(pixel) / 255.
 	return X, nImages
 
 def loadLabelFile(file):
@@ -34,7 +34,7 @@ def loadLabelFile(file):
 		print("Reading data from label...")
 		maginc_number_train = nextInt(file)
 		nLabels = nextInt(file)
-		nLabels = 1024
+		#nLabels = 1024
 		y = [[0 for j in range(nLabels)] for l in range(10)]
 		for l in range(nLabels):
 				y[ord(file.read(1))][l] = 1
@@ -54,49 +54,68 @@ def matrixToCSV(M, filename):
 
 clear = lambda: os.system('cls')
 clear()
+
 print("Loading training data")
 startImageFile = time.time()
 f = open("../train/train-images.idx3-ubyte", "rb")
-loadingImageFile = time.time()
 X, nImages = loadImageFile(f)
-readingImageFile = time.time()
-print("Closing training file")
-f.close()
-print("Loading label data")
-startLabelFile = time.time()
+
+print("Loading train label data")
 f = open("../train/train-labels.idx1-ubyte", "rb")
-loadingLabelFile = time.time()
 y, nLabels = loadLabelFile(f)
-readingLabelFile = time.time()
+f.close()
+
+print("Loading test data")
+f = open("../test/t10k-images.idx3-ubyte", "rb")
+X_test, nImages_test = loadImageFile(f)
+f.close()
+print("Loading test label data")
+f = open("../test/t10k-labels.idx1-ubyte", "rb")
+Y_test, nlabels_test = loadLabelFile(f)
 f.close()
 
 X = np.array(X)
 y = np.array(y)
 
-nn = Network(layers = [ FullConnectedLayer(784),
+nn = Network(layers = [ FullConnectedLayer(
+							nNodes = 784,
+							keep_prob = 0.5),
 						SoftmaxLayer(10)],
-			mini_batch_size = 2,
-			num_iterations = 20,
-			learning_rate = 0.1,
+			mini_batch_size = 1024,
+			num_iterations = 50,
+			learning_rate = 0.01,
 			momentum_rate = 0.9,
 			rmsprop_rate = 0.999,
+			l2_regularization = 0.7,
 			verbose = False)
 
 nn.fit(X, y)
 
+X_test = np.array(X_test)
+Y_test = np.array(Y_test)
 
+test_error = nn.validate(X_test, Y_test) * 1 / nImages_test
+print("Test error : ", 1 - test_error)
+print("Test acc.  : %.02f"%(test_error * 100))
+print("--------------------------------")
 
 totalTime = time.time()
-print("---")
-print("Loading data time: %.4fsec" % (loadingImageFile - startImageFile))
-print("Reding data time: %.4fsec" % (readingImageFile - loadingImageFile))
-print("Loading label time: %.4fsec" % (loadingLabelFile - startLabelFile))
-print("Reding label time: %.4fsec" % (readingLabelFile - loadingLabelFile))
 print("Total time: %.4fsec" % (totalTime - startImageFile))
-print("Total images process: ", nImages)
-print("Total labels process: ", nLabels)
-print("---")
+print("Total train data process : ", nImages)
+print("Total test data process  : ", nImages_test)
+print("--------------------------------")
 
+'''
+nn = Network(layers = [ FullConnectedLayer(784, keep_prob = 0.5),
+						SoftmaxLayer(10)],
+			mini_batch_size = 1024,
+			num_iterations = 50,
+			learning_rate = 0.3,
+			momentum_rate = 0.9,
+			rmsprop_rate = 0.999,
+			l2_regularization = 0.7,
+			verbose = False)
+'''
 # Reference links
 # https://medium.com/@awjuliani/simple-softmax-in-python-tutorial-d6b4c4ed5c16
 # https://stats.stackexchange.com/questions/235528/backpropagation-with-softmax-cross-entropy
