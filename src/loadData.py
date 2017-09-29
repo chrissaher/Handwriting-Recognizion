@@ -11,6 +11,11 @@ from NeuralNetwork import SoftmaxLayer
 from NeuralNetwork import InputLayer
 from NeuralNetwork import ReluLayer
 
+def printMatrix(self, matrix, row, col):
+	for i in range(row):
+		for j in range(col):
+			print("[%d][%d] = %lf"%(i, j, matrix[i][j]))
+
 def nextInt(file):
 	return int.from_bytes(file.read(4), byteorder = 'big')
 def loadImageFile(file):
@@ -28,6 +33,7 @@ def loadImageFile(file):
 		for i in range(nRow * nCol):
 			pixel = file.read(1)
 			X[i][j] = ord(pixel) / 255.
+
 	return X, nImages
 
 def loadLabelFile(file):
@@ -37,6 +43,7 @@ def loadLabelFile(file):
 		nLabels = nextInt(file)
 		#nLabels = 1024
 		y = [[0 for j in range(nLabels)] for l in range(10)]
+
 		for l in range(nLabels):
 				y[ord(file.read(1))][l] = 1
 		return y, nLabels
@@ -70,6 +77,7 @@ print("Loading test data")
 f = open(constants.PATH_TEST_IMAGES, "rb")
 X_test, nImages_test = loadImageFile(f)
 f.close()
+
 print("Loading test label data")
 f = open(constants.PATH_TEST_LABELS, "rb")
 Y_test, nlabels_test = loadLabelFile(f)
@@ -103,6 +111,7 @@ print("Test acc.  : %.02f"%(test_error * 100))
 print("--------------------------------")
 
 totalTime = time.time()
+
 print("Total time: %.4fsec" % (totalTime - startImageFile))
 print("Total train data process : ", nImages)
 print("Total test data process  : ", nImages_test)
