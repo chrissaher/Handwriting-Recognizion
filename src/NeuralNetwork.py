@@ -8,7 +8,6 @@ class Layer:
 	def __init__(self, nNodes):
 		self.m = nNodes;
 
-
 class InputLayer(object):
 
 	def __init__(self, X):
@@ -59,11 +58,6 @@ class SoftmaxLayer(Layer):
 	def forward(self, input_layer, W, b):
 		self.Z = np.dot(W, input_layer) + b
 		self.A = util.softmax(self.Z)
-		#print("OUTPUT:", self.Z.T[0])
-		#print("OUTPUT:", self.A.T[0])
-		#print("MIN:", np.min(self.A.T[0]))
-		#print("MAX:", np.max(self.A.T[0]))
-		#print("--------------")
 		return self.A
 
 	# cross-entropy function
@@ -71,31 +65,16 @@ class SoftmaxLayer(Layer):
 		# http://cs231n.github.io/neural-networks-case-study/#grad
 		# https://gist.github.com/mamonu/b03ffa2e6775e45866843e11dcd84361
 
-		#print("MIN VAL OF A: ", np.min(self.A))
-		#print("MAX VAL OF A: ", np.max(self.A))
-		#print(self.A)
 		return (1. / self.m) * np.sum(Y * -np.log(self.A))
-		#return - np.sum(np.log(self.A) * (Y), axis=1)
 
 	def error(self, Y):
 		return self.A - Y
 
 	def backpropagate(self, dA, A_prev):
-		#dz = np.dot(self.Z, dA)
 		dz = dA
-		#print("DIFF:", dz.T[0])
-		#print("######SOFTMAX BACK######")
-		#print("dA.shape: ", dA.shape)
-		#print("dZ.shape: ", dz.shape)
-		#print("Z.shape: ", self.Z.shape)
-		#print("A.shape: ", self.A.shape)
-		#print("A_prev.shape: ", A_prev.shape)
 
 		dw = (1. / self.m) * np.dot(dz, A_prev.T)
 		db = (1. / self.m) * np.sum(dz, axis = 1, keepdims = True)
-		#print("dw.shape: ", dw.shape)
-		#print("db.shape: ", db.shape)
-		#print("########################")
 		return (dz, dw, db)
 
 	def predict(self):
@@ -214,7 +193,7 @@ class Network:
 				l2_reg_cost = l2_reg_cost * (self.lambd / (2. * m))
 				cost = np.sum(_layers[-1].cost(_y)) + l2_reg_cost
 
-				if cont % 100 == 0:
+				if cont % 10 == 0:
 					print("Cost at iteration " + str(cont) + ": " + str(cost));
 					f.write(str(cost) + "\n")
 				cont = cont + 1
@@ -280,8 +259,6 @@ class Network:
 
 		_pred = _layers[-1].predict()
 		_real = Y.argmax(axis = 0)
-		#print("PRED : ",_pred)
-		#print("REAL : ",_real)
 		cont = 1 * (_pred == _real)
 		return np.sum(cont)
 
@@ -297,8 +274,6 @@ class Network:
 		m = X.shape[1]
 		mini_batches = []
 		permutation = list(np.random.permutation(m))
-		#shuffled_X = X[permutation, :]
-		#shuffled_Y = Y[permutation, :]
 		shuffled_X = X[:, permutation]
 		shuffled_Y = Y[:, permutation]
 
@@ -306,8 +281,6 @@ class Network:
 		for k in range(num_complete_minibatches):
 			mini_batch_X = shuffled_X[:, k * mini_batch_size: (k + 1)* mini_batch_size]
 			mini_batch_Y = shuffled_Y[:, k * mini_batch_size: (k + 1)* mini_batch_size]
-			#mini_batch_X = shuffled_X[k * mini_batch_size: (k + 1)* mini_batch_size, :]
-			#mini_batch_Y = shuffled_Y[k * mini_batch_size: (k + 1)* mini_batch_size, :]
 
 			mini_batch = (mini_batch_X, mini_batch_Y)
 			mini_batches.append(mini_batch)
@@ -315,8 +288,6 @@ class Network:
 		if m % mini_batch_size != 0:
 			mini_batch_X = shuffled_X[:, num_complete_minibatches * mini_batch_size :]
 			mini_batch_Y = shuffled_Y[:, num_complete_minibatches * mini_batch_size :]
-			#mini_batch_X = shuffled_X[num_complete_minibatches * mini_batch_size :, :]
-			#mini_batch_Y = shuffled_Y[num_complete_minibatches * mini_batch_size :, :]
 
 			mini_batch = (mini_batch_X, mini_batch_Y)
 			mini_batches.append(mini_batch)

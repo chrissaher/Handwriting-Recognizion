@@ -4,6 +4,7 @@ import time
 import numpy as np
 import scipy.misc as smp
 import os, errno
+import constants
 from NeuralNetwork import Network
 from NeuralNetwork import FullConnectedLayer
 from NeuralNetwork import SoftmaxLayer
@@ -57,20 +58,20 @@ clear()
 
 print("Loading training data")
 startImageFile = time.time()
-f = open("../train/train-images.idx3-ubyte", "rb")
+f = open(constants.PATH_TRAIN_IMAGES, "rb")
 X, nImages = loadImageFile(f)
 
 print("Loading train label data")
-f = open("../train/train-labels.idx1-ubyte", "rb")
+f = open(constants.PATH_TRAIN_LABELS, "rb")
 y, nLabels = loadLabelFile(f)
 f.close()
 
 print("Loading test data")
-f = open("../test/t10k-images.idx3-ubyte", "rb")
+f = open(constants.PATH_TEST_IMAGES, "rb")
 X_test, nImages_test = loadImageFile(f)
 f.close()
 print("Loading test label data")
-f = open("../test/t10k-labels.idx1-ubyte", "rb")
+f = open(constants.PATH_TEST_LABELS, "rb")
 Y_test, nlabels_test = loadLabelFile(f)
 f.close()
 
@@ -82,11 +83,13 @@ nn = Network(layers = [ FullConnectedLayer(
 							keep_prob = 0.5),
 						SoftmaxLayer(10)],
 			mini_batch_size = 1024,
-			num_iterations = 50,
-			learning_rate = 0.01,
+			num_iterations = 30,
+			learning_rate = 0.03,
 			momentum_rate = 0.9,
 			rmsprop_rate = 0.999,
 			l2_regularization = 0.7,
+			train_size = 0.8,
+			dev_size = 0.2,
 			verbose = False)
 
 nn.fit(X, y)
